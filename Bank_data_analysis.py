@@ -34,6 +34,23 @@ df_age.select(df_age.min_age, df_age.max_age, (F.round(df_age["avg_age"], 2).ali
 #4. Check quality of customers by checking average balance, median balance of customers 
 bankDF.agg(F.avg(bankDF.balance).alias("avg_balance"),F.expr('percentile(balance, 0.5)').alias("median_balance")).show()
 
+
+
+#5. Check if age status mattered for subscription to deposit.
+age_df = bankDF.filter(bankDF.y.contains("yes")).groupBy("age").count()
+age_df.show()
+def age_comp(age):
+     str1 = ""
+     age_str = str(age)
+     if age < 20 :
+             str1 =  "Subscribers are mostly of " + age_str +  " years and are teenagers"
+     elif age >=20 and age  <=50 :
+             str1 =  "Subscribers are mostly of " + age_str +" years and are adults"
+     else:
+             str1 =  "Subscribers are mostly of " + age_str + " years and are elders"
+     return str1
+
+
 #6.Check if marital status mattered for subscription to deposit.
 marital_df = bankDF.filter(bankDF.y.contains("yes")).groupBy("marital").count()
 marital_df.show()
@@ -52,20 +69,8 @@ convertUDF = udf(lambda z : marital_comp(z))
 print("Marital Status matters for subscription to deposit")
 max_count.select( convertUDF(max_count.marital).alias("----STATUS----")).show(truncate = False)
 
-#5. Check if age status mattered for subscription to deposit.
-age_df = bankDF.filter(bankDF.y.contains("yes")).groupBy("age").count()
-age_df.show()
-def age_comp(age):
-     str1 = ""
-     age_str = str(age)
-     if age < 20 :
-             str1 =  "Subscribers are mostly of " + age_str +  " years and are teenagers"
-     elif age >=20 and age  <=50 :
-             str1 =  "Subscribers are mostly of " + age_str +" years and are adults"
-     else:
-             str1 =  "Subscribers are mostly of " + age_str + " years and are elders"
-     return str1
 
+#7.Check if age and marital status together mattered for subscription to deposit scheme
 age_df.registerTempTable("age_count")
 max_count_age = sqlContext.sql("select age,count from age_count where count= (select max(count) from age_count)")
 convertAgeUDF = udf(lambda z : age_comp(z))
