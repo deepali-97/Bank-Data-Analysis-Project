@@ -15,26 +15,21 @@ bankDF.show()
 
 #2. A Give marketing success rate. (No. of people subscribed / total no. of entries)
 #B Give marketing failure rate
-
 total_entries = bankDF.count()
 total_subscribers = bankDF.filter(bankDF.y.contains("yes")).count()
 success_rate = total_subscribers / total_entries
 y = "{:.2f}".format(success_rate)
 failure_rate = (1 - success_rate)
 x = "{:.2f}".format(failure_rate)
-
 print("Marketing Success Rate : ",y)
 print("Marketing Failure Rate : ",x)
 
 #3. Maximum, Mean, and Minimum age of average targeted customer
 df_age = bankDF.filter(bankDF.y.contains("yes")).agg(F.min(bankDF.age).alias("min_age") , F.max(bankDF.age).alias("max_age"), F.avg(bankDF.age).alias("avg_age") )
 df_age.select(df_age.min_age, df_age.max_age, (F.round(df_age["avg_age"], 2).alias("avg_age"))).show()
-
     
 #4. Check quality of customers by checking average balance, median balance of customers 
 bankDF.agg(F.avg(bankDF.balance).alias("avg_balance"),F.expr('percentile(balance, 0.5)').alias("median_balance")).show()
-
-
 
 #5. Check if age status mattered for subscription to deposit.
 age_df = bankDF.filter(bankDF.y.contains("yes")).groupBy("age").count()
@@ -49,7 +44,11 @@ def age_comp(age):
      else:
              str1 =  "Subscribers are mostly of " + age_str + " years and are elders"
      return str1
-
+age_df.registerTempTable("age_count")
+max_count_age = sqlContext.sql("select age,count from age_count where count= (select max(count) from age_count)")
+convertAgeUDF = udf(lambda z : age_comp(z))
+print("Age matters for subscription to deposit")
+max_count_age.withColumn("age",col("age").cast("Integer")).select( convertAgeUDF(col("age")).alias("----STATUS----")).show(truncate = False)
 
 #6.Check if marital status mattered for subscription to deposit.
 marital_df = bankDF.filter(bankDF.y.contains("yes")).groupBy("marital").count()
@@ -69,14 +68,7 @@ convertUDF = udf(lambda z : marital_comp(z))
 print("Marital Status matters for subscription to deposit")
 max_count.select( convertUDF(max_count.marital).alias("----STATUS----")).show(truncate = False)
 
-
 #7.Check if age and marital status together mattered for subscription to deposit scheme
-age_df.registerTempTable("age_count")
-max_count_age = sqlContext.sql("select age,count from age_count where count= (select max(count) from age_count)")
-convertAgeUDF = udf(lambda z : age_comp(z))
-print("Age matters for subscription to deposit")
-max_count_age.withColumn("age",col("age").cast("Integer")).select( convertAgeUDF(col("age")).alias("----STATUS----")).show(truncate = False)
-
 age_marital_df = bankDF.filter(bankDF.y.contains("yes")).groupBy("age","marital").count()
 age_marital_df.show()
 def age_marital_comp(age,marital):
