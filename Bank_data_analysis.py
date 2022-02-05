@@ -24,7 +24,7 @@ x = "{:.2f}".format(failure_rate)
 print("Marketing Success Rate : ",y)
 print("Marketing Failure Rate : ",x)
 
-#3. Maximum, Mean, and Minimum age of average targeted customer
+#3. Maximum, Mean, and Minimum age of targeted customer
 df_age = bankDF.filter(bankDF.y.contains("yes")).agg(F.min(bankDF.age).alias("min_age") , F.max(bankDF.age).alias("max_age"), F.avg(bankDF.age).alias("avg_age") )
 df_age.select(df_age.min_age, df_age.max_age, (F.round(df_age["avg_age"], 2).alias("avg_age"))).show()
     
@@ -80,5 +80,12 @@ convertAgeMaritalUDF = udf(lambda y,z : age_marital_comp(y,z))
 print("Both Age and Marital Status matters for subscription to deposit") 
 max_a_m.select(convertAgeMaritalUDF(col("age"),col("marital")).alias("----STATUS----")).show(truncate = False)
 
+#8.Check how many customers have taken the subscription to deposit when called once.
+result1 = bankDF.filter("duration != 0").filter(bankDF.y.contains("yes")).filter("campaign = 1").count()
+print("Customers have taken the subscription to deposit when called once : ", result1)
+
+#9.Check how many unemployed customers have not taken the subscription to deposit.
+result2 = bankDF.filter("duration != 0").filter(bankDF.y.contains("no")).filter(bankDF.job.contains("unemployed")).count()
+print("Number of Unemployed customers have not taken the subscription to deposit : ",result2)
 
 
